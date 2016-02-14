@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>SQASM: Code Demonstration Slides</title>
+
+		<meta name="description" content="A presentation on a quantum assembly language implementation">
+		<meta name="author" content="Ryan Watkins">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+		
+		
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1 style="font-size: 75px">SQASM</h1>
+					<h3>Simple Quantum Assembler</h3>
+					<p>
+						<small>Created by <a href="http://ryanwatkins.me">Ryan Watkins</a> / <a href="http://twitter.com/ryanwatkins_">@ryanwatkins_</a></small>
+					</p>
+				</section>
+
+				<section>
+					<h2>What is SQASM?</h2>
+					<p>
+						<ol>
+							<li>Quantum Simulator</li>
+							<li>Quantum Programming Language</li>
+						</ol>
+					</p>
+				</section>
+
+				<section>
+					<h2>Quantum simulator</h2>
+						<ol>
+							<li>Obeys laws of Quantum Mechanics</li>
+							<li>Applies a Quantum Architectural model</li>
+							<li>Quantum Arithmetic
+							    <ol>
+							    <li>Carry-Save Adder</li>
+							    <li>Low quantum cost multiplier</li>
+							    </ol>
+							</li>
+							<li>Deutsch-Jozsa(1992) algorithm implementation</li>
+							<li>Interface to Quantum Programming Language</li>
+							<li>Written from scratch in Python, will be released as GitHub project</li>
+							<li>Highly extensible (could run Shor's algorithm)</li>
+
+						</ol>
+				</section>
+
+				<section>
+					<h2>Overview of Solution</h2>
+					<ol>
+					<style>
+						#arrowhead15 path{ fill:white !important; }
+						#arrowhead16 path{ fill:white !important; }
+						#arrowhead17 path{ fill:white !important; }
+						#arrowhead18 path{ fill:white !important; }
+					</style>
+					<div class="mermaid" data-background:"#DDDDDD">
+						graph LR
+							A((.SQASM)) --> B(Compiler)
+							B --> C(Simulator)
+							C --> B
+
+							style A fill:#3498db, stroke-width: 4px;
+							style B fill:#2ecc71, stroke-width: 4px;
+							style C fill:#9b59b6, stroke-width: 4px;
+
+							linkStyle 0 stroke:#FFFFFF,stroke-width:3px;
+							linkStyle 1 stroke:#FFFFFF,stroke-width:3px;
+							linkStyle 2 stroke:#FFFFFF,stroke-width:3px;
+        				</div>
+					<p>The Quantum Simulator (Theoretical Quantum Machine) is a blackbox that is <b>reliant</b> upon the classical machine for input.</p> 
+					<br>			
+					<p>Classical compiled code is input to the quantum simulator. Quantum computation is done and data is passed back (Python objects representing registers or gates)</p>
+					<br>
+					<p>This data gets stored in a hashtable for later use by the compiler.</p></ol>
+
+				</section>
+
+				<section>
+					<h2>Quantum Architecture</h2>
+					<p>
+						<ol>
+							<li>Quantum Registers</li>
+							<li>Quantum Bits</li>
+							<li>TODO</li>
+						</ol>
+					</p>
+				</section>
+
+				<section>
+					<h2>Initializing the Quantum System</h2>
+						<ol>
+							<pre><code style="font-size: 26px;" class="python">class QReg:                                                                      
+	def __init__(self, n_qubits, setVal=-1):                                     
+            self.n_qubits = n_qubits                                                 
+            self.qubits = [0] * n_qubits                                             
+            self.amps = [0] * (1 << n_qubits) # 2^n_qubits complex numbers        
+            self.amps[len(self.amps) - 1] = 1                                        
+            if (setVal != -1):                                                       
+                self.amps[setVal] = 1                                                
+                if (setVal != len(self.amps) - 1):                                   
+                    self.amps[len(self.amps) - 1] = 0                                
+            self.amps = np.matrix(self.amps).T  </code></pre>
+	
+							<li>Amplitudes are the probabilities of our quantum states, represented in Binary format</li>
+							<li><code>setVal</code> initialises a quantum register to a given state</li>
+							<li>Amplitudes $= 2^n$, where $n$ = quantum bit size</li>
+						</ol>
+				</section>
+
+				<section>
+					<h2>Quantum Bits</h2>
+						<ol>
+							<li>Can only be measured or <i>observed</i></li>
+							<li>The act of measuring causes a <i>collapse</i>, we return to discrete values of $\{0, 1\}$</li>
+							<li>If $\{110\}$ or amps[$6$] = 1, then: $\{q_1, q_2\} = 1, \{q_3\} = 0$</li>
+							<li>We can also say that these states are definite</li>
+						<h2>Superposition</h2>
+							<li>Given $2^3$ amplitudes in superposition, each state = $\frac{1}{\sqrt{8}}$</li>
+							<li>Let's see this in practice...</li>
+						</ol>
+				</section>
+
+				<section>
+					<h2>Quantum Bits</h2>
+					
+						<ol>
+							<pre><code class="python">q = QReg(3, 5)  # 3, num qubits, 5 specifies index to set 1                             
+print('QReg Amplitudes are: %s' % q.amps.T) </code></pre>
+	
+						</ol>
+
+					
+					<h2>OUTPUT</h2>
+					<ol>
+						<pre><code>
+QReg Amplitudes are: [[0 0 0 0 0 1 0 0]]
+						</code></pre>
+					</ol>
+				</section>
+
+				<section>
+					<h2>Quantum Gates?</h2>
+					<ol>
+						<p>Example of superposition by applying Hadamard</p>
+						<pre><code class="python">r = INITIALIZE(4)  # Get quantum system with 3 qubits
+qs.applyGate(t(HAD, ID, ID, ID), r)  # Had bit1
+qs.applyGate(t(ID, HAD, ID, ID), r)  # Had bit2
+qs.applyGate(t(ID, ID, HAD, ID), r) # Had bit3
+qs.applyGate(t(ID, ID, ID, HAD), r) # Had bit4
+print(r.amps.T) </code></pre>
+		<h4>Output</h4>
+		<pre><code class="python"> [[ 0.25+0.j -0.25+0.j -0.25+0.j  0.25+0.j -0.25+0.j  0.25+0.j  0.25+0.j
+	         -0.25+0.j -0.25+0.j  0.25+0.j  0.25+0.j -0.25+0.j  0.25+0.j -0.25+0.j
+	  -0.25+0.j  0.25+0.j]] </code></pre>
+					</ol>
+				</section>
+
+				<section>
+					<h2>Quantum Gates</h2>
+						<h4>Hadamard Gate in Python</h4>
+						<pre><code class="python" data-trim contenteditable>
+#  np refers to usage of NumPy - www.numpy.org
+HAD = np.matrix([[1 / sqrt(2), 1 / sqrt(2)], 
+		[1 / sqrt(2), -1 / sqrt(2)]]) 
+							</code></pre>
+
+						<h4>Other representations</h4>
+						$\begin{bmatrix}
+							\frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}} \\
+							\frac{1}{\sqrt{2}} & \frac{1}{\sqrt{2}}
+						\end{bmatrix}$ 
+						<img style="margin-left: 10%" src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Hadamard_gate.svg/150px-Hadamard_gate.svg.png"/> 
+					</ol>
+				</section>
+				<section>
+					<h2>Quantum Gates</h2>
+					<ol>
+					    <small>The simulator contains a generic tensor product function <code>t</code> which allows us to apply gates to our register. We can apply these two together by using the dot product</small>
+						<h4>Implementation</h4>
+						<li><pre><code style="font-size: 20px;" class"python" data-trim contenteditable>def qmaj(self, r, qs): 
+	qs.applyGate(t(ID, T), r)  # 1st op - Toffoli (b, c, d)                 
+        qs.applyGate(t(ID, CNOT, ID), r)  # 2nd op - CNOT (b, c)                 
+        qs.applyGate(t(ID, SWAP, ID), r)  # swap(b, c) - (a, c, b, d)             
+        qs.applyGate(t(ID, ID, SWAP), r)  # swap(b, d) - (a, c, d, b)             
+        qs.applyGate(t(T, ID), r)  # 3rd op - Toffoli(a, c, d)                                
+        qs.applyGate(t(ID, ID, SWAP), r)  # swap(b, d) - (a, c, b, d)             
+        qs.applyGate(t(ID, SWAP, ID), r)  # swap(c, b) - (a, b, c, d)             
+        qs.applyGate(t(ID, CNOT, ID), r)  # 4th op - CNOT (b, c) 
+						</code></pre>
+						<small style="text-align: center">Implements quantum majority gate outlined:<br> 
+						    http://arxiv.org/abs/quant-ph/9808061 (Phil Gossett 1998)</small> </br>
+						    <small><i>Note:</i> <code>qs</code> is an object of class QSimulator, <code>applyGate</code> performs dot product</small>
+					</ol>
+				</section>
+
+				<section>
+					<h2>Quantum Gates</h2>
+					<ol>
+					    <p>Key things to note:</p>
+							<li>Usage of Identity gates (ID) to 'pad' certain bits, this is because we cannot just apply gates to one bit, it has to be to an entire registry</li>
+							<pre><code class="python">qs.applyGate(t(ID, T), r)  # 1st op - Toffoli (b, c, d)</code></pre> <b>$TOF \{b, c, d\}$</b>
+							<li>The SWAP gate swaps one bit with an adjacent bit using unitary transformation. Adds <i>Quantum cost</i>.</li>
+						   <p style="font-size: 30px">$SWAP =
+						    \begin{bmatrix}
+							1 & 0 & 0 & 0 \\
+							0 & 0 & 1 & 0 \\
+							0 & 1 & 0 & 0 \\
+							0 & 0 & 0 & 1
+						\end{bmatrix}$</p>
+					</ol>
+				</section>
+
+				<section>
+				<h2>Quantum Gates</h2>
+					<ol>
+						<li>No cloning of information, just unitary transformations</li>							
+						<li>We can observe that there was 4 operations that we wanted to achieve from the set of bits $\{a, b, c, d\}$<ul>
+						<p>$TOFFOLI\{b, c, d\}$</p>
+						<p>$CNOT\{b, c\}$</p>
+						<p>$TOFFOLI\{a, c, d\}$</p>
+						<p>$CNOT\{b, c\}$</p>
+					</ul>
+						</li>
+						Our swap gates allowed us to get the bits in the right order to do the operations!
+					</ol>
+				</section>
+
+				<section>
+					<h2>Quantum Arithmetic</h2>
+						<ol>
+							<img src="res/qmaj.png"/>
+							<p style="font-size: 25px">Toffoli (B, C, D), CNOT (B, C), Toffoli (A, C, D), CNOT (B, C)</p>
+							<img src="res/qfa.png"/>
+							<p style="font-size: 25px">Toffoli (B, C, D), CNOT(B, C), Toffoli (A, C, D), CNOT(A, C)</p>
+							<p style="font-size: 25px">Source: http://arxiv.org/abs/quant-ph/9808061</p>
+						</ol>
+				</section>
+				<section>
+				    <h2>Quantum Arithmetic</h2>
+			<h2>DEMO</h2>
+				</section>
+				<section>
+				<h2>Quantum Multiplier</h2>
+				<ol>
+				    <li>Uses PERES and MTSG gates</li>
+				<li>Two subsections
+			    <ol>
+				<li>Partial product generation</li>
+				<li>Summation of partial products</li>
+			    </ol>
+			</li>
+			</ol>
+				</section>
+				<section>
+				    <h2>Quantum Multiplier: Partial Product Generation</h2>
+			<img src="res/partial-prod-gen.png"/>
+			<p style="font-size: 25px">Ref: International Journal of Advanced Research in Computer Engineering & Technology (IJARCET) Volume 4, Issue 4, April 2015</p>
+				</section>
+
+				<section>
+				    <h2>Quantum Multiplier: Partial Product Summation</h2>
+			<img src="res/summation.png"/>
+			<p style="font-size: 25px">Ref: International Journal of Advanced Research in Computer Engineering & Technology (IJARCET) Volume 4, Issue 4, April 2015</p>
+				</section>
+				<section>
+				    <h2>Quantum Multiplier Demo</h2>
+				</section>
+
+				<section>
+				    <h2>Quantum Algorithms</h2>
+				    <ol>
+				    <p>Deutsch-Jozsa(1992) algorithm takes one evaluation time step as opposed to $2^n/2+1$ evaluations necessary in a classical machine</p>
+				    <p>Somewhat arbitrary algorithm contrived to show power of quantum computation</p>
+				    <li>$\{0, 1\} \rightarrow \{0, 1\}$</li>
+				    <li>$f(0) = f(1)?$</li>
+				    <li>Classically requires two operations, calculate $f(0)$ and $f(1)$ and compare</li>
+				    </ol>
+				</section>
+				<section>
+				    <h2>Deutsch-Jozsa (1992)</h2>
+				    <ol>
+					<p>We are reliant upon a oracle function: $U_f: \left|x\right\rangle \left|y\right\rangle \rightarrow \left|x\right\rangle \left|f(x)\oplus y\right\rangle$</p>
+					<p>$f(x)$ can only be <i>constant</i> or <i>balanced</i></p>
+					<p>$\oplus$ = add mod 2</p>
+					<p>$f(0) \oplus f(1) = 
+					\begin{cases}
+					    0 & \text{same} \\
+					    1 & \text{not}
+					\end{cases}$</p>
+				    </ol>
+				</section>
+				<section>
+				    <h2>Deutsch-Jozsa (1992) Step One</h2>
+				    <ol><br>
+					<p>In: $\Psi = \left|0\right\rangle \left|1\right\rangle$</p>
+					<br>
+					<li>Hadamard both Qubits</li>
+					<p>$\Psi = \frac{1}{\sqrt{2}}(\left|0\right\rangle + \left|1\right\rangle)\frac{1}{\sqrt{2}}(\left|0\right\rangle - \left|1\right\rangle)$</p>
+					<p>$= \frac{1}{2}(\left|0\right\rangle(\left|0\right\rangle - \left|1\right\rangle) + \left|1\right\rangle(\left|0\right\rangle - \left|1\right\rangle)$</p><br>
+					<p>Note: we simplify to apply $U_f$</p>
+				    </ol>
+				</section>
+				<section>
+				    <h2>Deutsch-Jozsa (1992) Step Two</h2>
+				    <ol>
+					<p>After applying $U_f$:</p>
+					<p>$\frac{1}{2}[\left|0\right\rangle (\left|f(0)\oplus0\right\rangle - \left|f(0)\oplus1\right\rangle) +\left|1\right\rangle (\left|f(1)\oplus0\right\rangle - \left|f(1)\oplus1\right\rangle)]$</p>
+					<p>Note: $f(0)=0 \implies (0 - 1)$</p>
+					<p>$f(0)=1 \implies (1 - 0) = - (0 - 1)$</p>
+					<p>$ = (-1)^{f(0)} (\left|0\right\rangle - \left|1\right\rangle)$</p>
+					<p>$ = \frac{1}{2}[(-1)^{f(0)} \left|0\right\rangle (\left|0\right\rangle - \left|1\right\rangle) + (-1)^{f(1)} \left|1\right\rangle (\left|0\right\rangle - \left|1\right\rangle)]$</p>
+					<p>$ = \frac{1}{2} (-1)^{f(0)}[\left|0\right\rangle + (-1)^{f(0) \oplus f(1)} \left|1\right\rangle] (\left|0\right\rangle - \left|1\right\rangle)$</p>
+				    </ol>
+				</section>
+				<section>
+				    <h2>Deutsch-Jozsa (1992) Step Three</h2>
+				    <ol>
+				    <p>Forget about second qubit</p>
+				    <p>Same $\implies \left|0\right\rangle + \left|1\right\rangle$</p>
+				    <p>Different $\implies \left|0\right\rangle - \left|1\right\rangle$</p>
+				    <p>These are familiar states: they are obtained via Hadamard</p>
+				    <p>Therefore, do the inverse of Hadamard, which is Hadamard itself</p>
+				    <ol>
+				</section>
+				<section>
+				    <h2>Deutsch-Jozsa (1992) Step Four</h2>
+				    <ol>
+				    	<p>Hadamard 1st Qubit</p>
+					<p>$\Psi_{out} = \frac{1}{2}(1 + (-1)^{f(0) \oplus f(1)})\left|0\right\rangle \\ 
+					 + \frac{1}{2}(1-(-1)^{f(0) \oplus f(1)})\left|1\right\rangle$</p>
+					<br><p>Measure first qubit: $\implies \begin{cases}
+					    0 & \text{same} \\
+					    1 & \text{not}
+					\end{cases}$</p>
+				    </ol>
+				</section>
+				<section>
+				    <h2>Deutsch-Jozsa in Python</h2>
+				    <ol>
+					<pre>P1: Hadamard all qubits<code class="python">r = QReg(4, 0)  # Initialise system w/ 4 qubits
+qs.applyGate(t(HAD, ID, ID, ID), r)  # Had 1st qubit
+qs.applyGate(t(ID, HAD, ID, ID), r)  # Had 2nd qubit
+qs.applyGate(t(ID, ID, HAD, ID), r)  # Had 3rd qubit
+qs.applyGate(t(ID, ID, ID, HAD), r)  # Had 4th qubit</code></pre>
+					P2: Apply $U_f$
+					<pre><code class="python">qs.quantumOracle(function, r)</code></pre>
+					<pre>P3: re-do part one</pre>
+									    </ol>
+				</section>
+				<section>
+				    <h2>Deutsch-Jozsa in Python</h2>
+				    <ol>
+					<pre>P4: Perform measurements<code class="python">for qubit in range(4):
+            functionChanges |= (qs.measure(r, qubit) == 1)
+
+        if functionChanges:
+            print("FOUND RESULT: %s is balanced\n" % name)
+        else:
+            print("FOUND RESULT: %s is constant\n" % name)</code></pre>
+				    </ol>
+				</section>
+				<section>
+				    <h2>Simple Quantum Assembler (SQASM)</h2>
+				    <ol>
+					<li>Interface for writing quantum programs</li>
+					<pre>Input: example.SQASM<code style="font-size: 20px">INITIALIZE R 2
+...
+ADD 3 2 R2
+MEASURE R2 RES</code></pre>
+					<pre>Output:<code style="font-size: 20px">--- ADD TERM TERM ---
+Trying to call Quantum Simulator...
+Elapsed time for add: 0.031271s
+SUCCESS: ADD
+SUCCESS: Python Simulator Function Call
+SET HASH BIN: 50, Trying to receive key-pair from bin: 50
+HASHTABLE FOUND VAL FROM KEY R2: <sim.QReg instance at 0x7f4dbc742878>
+--- MEASURE TERM TERM ---
+Found Register to measure: <sim.QReg instance at 0x7f4dbc742878>
+Trying to call Quantum Simulator...
+Amount of amplitudes in register 65536
+selection range: [0, 15]
+RES: [1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+SUCCESS: Python Simulator Function Call</code></pre>
+				    </ol>
+				</section>
+				<section>
+				    <h2>Compiler demo more in depth</h2>
+				</section>
+				<section>
+				    <h2>Any questions?</h2>
+				</section>
+			</div>
+
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+		
+				
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/math/math.js', async: true }
+				]
+			});
+
+		</script>
+		<script src="bower_components/mermaid/dist/mermaid.min.js"></script>
+		<script>mermaid.initialize({startOnLoad:true});</script>	
+	</body>
+</html>
